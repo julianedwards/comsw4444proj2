@@ -16,8 +16,9 @@ class HTTPServer {
 
 	public HTTPServer() throws IOException
 	{
-		socket = new ServerSocket();
-		socket.bind(null);
+		socket = new ServerSocket(8080);
+		//socket.bind(null);
+		//socket.bind(null);
 		if (!socket.isBound())
 			throw new NotYetBoundException();
 	}
