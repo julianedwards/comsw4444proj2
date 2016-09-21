@@ -54,16 +54,18 @@ public class Player implements slather.sim.Player {
 			 */
 			Point vector;
 			ArrayList<Cell> sortedCells = this.sort(enemy_cells, player_cell);
-			if (sortedCells.size() >= 2) {
-				Cell cellOne = sortedCells.get(0);
-				Cell cellTwo = sortedCells.get(1);
-				vector = avoidEnemies(player_cell, cellOne, cellTwo);
-			} else { // only 1 enemy cell in vicinity of player_cell
-				Cell cellOne = sortedCells.get(0);
-				vector = avoidEnemies(player_cell, cellOne);
+			if(!sortedCells.isEmpty()) {
+				if (sortedCells.size() >= 2) {
+					Cell cellOne = sortedCells.get(0);
+					Cell cellTwo = sortedCells.get(1);
+					vector = avoidEnemies(player_cell, cellOne, cellTwo);
+				} else { // only 1 enemy cell in vicinity of player_cell
+					Cell cellOne = sortedCells.get(0);
+					vector = avoidEnemies(player_cell, cellOne);
+				}
+				if (!collides(player_cell, vector, nearby_cells, nearby_pheromes))
+					return new Move(vector, memory);
 			}
-			if (!collides(player_cell, vector, nearby_cells, nearby_pheromes))
-				return new Move(vector, memory);
 		}
 
 		// if no previous direction specified or if there was a collision, try
