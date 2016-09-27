@@ -14,53 +14,48 @@ import slather.sim.Cell;
 import slather.sim.Move;
 import slather.sim.Pherome;
 import slather.sim.Player;
+import slather.g2.*;
 import slather.sim.Point;
 
 public class MaxAnglePlayer implements Player {
 	private static int cell_vision = 2;
+        private double t;
+        private double d;
 
 	@Override
 	public void init(double d, int t) {
-		// TODO Auto-generated method stub
+            this.t = t;
+            this.d = d;
 	}
 
 	@Override
 	public Move play(Cell player_cell, byte memory, Set<Cell> nearby_cells, Set<Pherome> nearby_pheromes) {
-		// TODO Auto-generated method stub
-		Point vector = new Point(0, 0);
-		if (player_cell.getDiameter() >= 2) {
-			return new Move(true, (byte) -1, (byte) -1);
-		}
-		if (!nearby_cells.isEmpty()) {
-			Set<Cell> cells = findCellInRange(nearby_cells, player_cell);
-			if (cells.size() == 1) {
-				vector = avoidCell(player_cell, cells.iterator().next());
-			} else if (cells.size() >= 2) {
-				// find best angle
-				vector = findBestDirection(cells, player_cell);
-			} else {
-				vector = new Point(0, 0);
-			}
+            // TODO Auto-generated method stub
+            Point vector = new Point(0, 0);
+            if (player_cell.getDiameter() >= 2) {
+                    return new Move(true, (byte) -1, (byte) -1);
+            }
+            if (!nearby_cells.isEmpty()) {
+                    Set<Cell> cells = findCellInRange(nearby_cells, player_cell);
+                    if (cells.size() == 1) {
+                            vector = avoidCell(player_cell, cells.iterator().next());
+                    } else if (cells.size() >= 2) {
+                            // find best angle
+                            vector = findBestDirection(cells, player_cell);
+                    }
+            }
 
-		} else {
-			// if no cell around, stay put/follow previous direction/go circle
-			vector = new Point(0, 0);
-		}
-		if (!collides(player_cell, vector, nearby_cells, nearby_pheromes))
-			return new Move(vector, memory);
-		
-		// if no previous direction specified or if there was a collision, try
-		// random directions to go in until one doesn't collide
-		for (int i = 0; i < 4; i++) {
-			Random gen = new Random();
-			int arg = gen.nextInt(180) + 1;
-			vector = extractVectorFromAngle(arg);
-			if (!collides(player_cell, vector, nearby_cells, nearby_pheromes))
-				return new Move(vector, (byte) arg);
-		}
-
-		// if all tries fail, just chill in place
-		return new Move(new Point(0, 0), (byte) 0);
+            if (!collides(player_cell, vector, nearby_cells, nearby_pheromes))
+                return new Move(vector, memory);
+            
+            // if all tries fail, just chill in place
+            if (this.t > 0) {
+                slather.g2.Player player2 = new slather.g2.Player();
+                return player2.playCircle(player_cell, memory, nearby_cells,
+                                          nearby_pheromes);
+            } else {
+                return new Move(vector, memory);
+            }
 	}
 
 	private Point findBestDirection(Set<Cell> cells, Cell player_cell) {
