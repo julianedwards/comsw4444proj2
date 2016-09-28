@@ -15,13 +15,19 @@ import slather.sim.Move;
 import slather.sim.Pherome;
 import slather.sim.Player;
 import slather.sim.Point;
+import slather.g2.*;
+import slather.g8.*;
 
 public class MaxAnglePlayer implements Player {
 	private static int cell_vision = 2;
-
+	private int t;
+	
+	private double d;
 	@Override
 	public void init(double d, int t) {
 		// TODO Auto-generated method stub
+		this.t = t;
+		this.d = d;
 	}
 
 	@Override
@@ -43,24 +49,47 @@ public class MaxAnglePlayer implements Player {
 			}
 
 		} else {
+			// slather.g2.Player playerTwo = new slather.g2.Player();
+			// return playerTwo.play(player_cell, memory, nearby_cells,
+			// nearby_pheromes);
 			// if no cell around, stay put/follow previous direction/go circle
 			vector = new Point(0, 0);
+			/*
+			 * for (int i = 0; i < 4; i++) { Random gen = new Random(); int arg
+			 * = gen.nextInt(180) + 1; vector = extractVectorFromAngle(arg); if
+			 * (!collides(player_cell, vector, nearby_cells, nearby_pheromes))
+			 * return new Move(vector, (byte) arg); }
+			 */
 		}
 		if (!collides(player_cell, vector, nearby_cells, nearby_pheromes))
 			return new Move(vector, memory);
+
 		
-		// if no previous direction specified or if there was a collision, try
-		// random directions to go in until one doesn't collide
-		for (int i = 0; i < 4; i++) {
-			Random gen = new Random();
-			int arg = gen.nextInt(180) + 1;
-			vector = extractVectorFromAngle(arg);
-			if (!collides(player_cell, vector, nearby_cells, nearby_pheromes))
-				return new Move(vector, (byte) arg);
-		}
+		  slather.g2.Player player2 = new slather.g2.Player(); return
+		  player2.play(player_cell, memory, nearby_cells, nearby_pheromes);
+		
+		/*
+		 * slather.g8.Player player8 = new slather.g8.Player(); return
+		 * player8.play(player_cell, memory, nearby_cells, nearby_pheromes);
+		 */
 
 		// if all tries fail, just chill in place
-		return new Move(new Point(0, 0), (byte) 0);
+
+		//return new Move(findNearestFriendlyPherome(nearby_pheromes, nearby_cells, player_cell), (byte) 0);
+	}
+
+	private Point findNearestFriendlyPherome(Set<Pherome> nearby_pheromes, Set<Cell> nearby_cells, Cell player_cell) {
+		double dist = Integer.MAX_VALUE;
+		Point vector = new Point(0, 0);
+		for (Pherome p : nearby_pheromes) {
+			if (p.player == player_cell.player && player_cell.distance(p) < dist
+					&& !collides(player_cell, p.getPosition(), nearby_cells, nearby_pheromes)) {
+				dist = player_cell.distance(p);
+				vector = p.getPosition();
+			}
+		}
+
+		return vector;
 	}
 
 	private Point findBestDirection(Set<Cell> cells, Cell player_cell) {
@@ -69,12 +98,17 @@ public class MaxAnglePlayer implements Player {
 		int largestAngle = Integer.MIN_VALUE;
 		Cell current = sortedCells[0];
 		int directionAngle = extractAngleFromVector(current.getPosition(), player_cell);
-		/*if (cells.size() != sortedCells.length)
-			System.out.println("Cells length" + cells.size() + ". Sorted cell length: " + sortedCells.length);
-		System.out.println("\n" + sortedCells.length);*/
-		/*for (Cell cell : sortedCells) {
-			System.out.println(cell.getPosition().x + "," + cell.getPosition().y);
-		}*/
+		/*
+		 * if (cells.size() != sortedCells.length)
+		 * System.out.println("Cells length" + cells.size() +
+		 * ". Sorted cell length: " + sortedCells.length);
+		 * System.out.println("\n" + sortedCells.length);
+		 */
+		/*
+		 * for (Cell cell : sortedCells) {
+		 * System.out.println(cell.getPosition().x + "," +
+		 * cell.getPosition().y); }
+		 */
 
 		for (int i = 1; i < sortedCells.length && sortedCells[i] != null; i++) {
 			int currentAngle = Math.abs(extractAngleFromVector(sortedCells[i].getPosition(), player_cell)
@@ -98,7 +132,6 @@ public class MaxAnglePlayer implements Player {
 
 		return extractVectorFromAngle(directionAngle);
 	}
-
 
 	// sort cells by its angle with play cell
 	private Cell[] sortCell(Set<Cell> cells, Cell player_cell) {
