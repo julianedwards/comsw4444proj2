@@ -14,178 +14,238 @@ import slather.sim.Cell;
 import slather.sim.Move;
 import slather.sim.Pherome;
 import slather.sim.Player;
-import slather.g2.*;
 import slather.sim.Point;
 
 public class MaxAnglePlayer implements Player {
-	private static int cell_vision = 2;
-        private double t;
-        private double d;
+    private static final int ANGLE_BITS = 5;
+    private static final int ANGLE_MIN = 0;
+    private static final int ANGLE_MAX = 1 << ANGLE_BITS;
+    private static final int ANGLE_MASK = ANGLE_MAX - 1;
 
-	@Override
-	public void init(double d, int t) {
-            this.t = t;
-            this.d = d;
-	}
+    private static final int ROLE_BITS = 1;
+    private static final int ROLE_MIN = ANGLE_MAX;
+    private static final int ROLE_MAX = ROLE_MIN + ( 1<<ROLE_BITS );
+    private static final int ROLE_MASK = (ROLE_MAX - 1) & ~ANGLE_MASK;
+    private static final int ROLE_SCOUT = 0 << ANGLE_BITS;
+    private static final int ROLE_CIRCLE = 1 << ANGLE_BITS;
+    private static final double TWOPI = 2*Math.PI;
 
-	@Override
-	public Move play(Cell player_cell, byte memory, Set<Cell> nearby_cells, Set<Pherome> nearby_pheromes) {
+    private static int cell_vision = 2;
+    private double t;
+    private double d;
+    private double dTheta;
+
+    @Override
+    public void init(double d, int t) {
+        this.t = t;
+        this.d = d;
+    }
+
+    // group 2's playCircle method
+    public Move playCircle(Cell player_cell, byte memory, Set<Cell> nearby_cells, Set<Pherome> nearby_pheromes) {
+        double theta = byte2angle(memory);
+        double nextTheta = normalizeAngle(theta + dTheta,0);
+        byte nextMemory = 0;
+        Point vector = null;
+        // Try to go any of four normal directions.
+        for(int i=0; i<4; ++i) {
+            nextMemory = angle2byte(nextTheta, memory);
+            vector = extractVectorFromAngle(nextTheta);
+            if (!collides( player_cell, vector, nearby_cells, nearby_pheromes))
+                return new Move(vector, nextMemory);
+            nextTheta += Math.PI/2;
+        }
+
+        // if all tries fail, just chill in place
+        return new Move(new Point(0,0), (byte)1);
+    }
+
+    @Override
+    public Move play(Cell player_cell, byte memory, Set<Cell> nearby_cells, Set<Pherome> nearby_pheromes) {
+        // TODO Auto-generated method stub
+        Point vector = new Point(0, 0);
+        if (player_cell.getDiameter() >= 2) {
+                return new Move(true, (byte) -1, (byte) -1);
+        }
+        if (!nearby_cells.isEmpty()) {
+                Set<Cell> cells = findCellInRange(nearby_cells, player_cell);
+                if (cells.size() == 1) {
+                        vector = avoidCell(player_cell, cells.iterator().next());
+                } else if (cells.size() >= 2) {
+                        // find best angle
+                        vector = findBestDirection(cells, player_cell);
+                }
+        }
+
+        if (!collides(player_cell, vector, nearby_cells, nearby_pheromes))
+            return new Move(vector, memory);
+        
+        // if all tries fail, just chill in place
+        if (this.t > 0) {
+            // using group 2's playCircle method
+            return playCircle(player_cell, memory, nearby_cells,
+                                      nearby_pheromes);
+        } else {
+            return new Move(vector, memory);
+        }
+    }
+
+    private Point findBestDirection(Set<Cell> cells, Cell player_cell) {
             // TODO Auto-generated method stub
-            Point vector = new Point(0, 0);
-            if (player_cell.getDiameter() >= 2) {
-                    return new Move(true, (byte) -1, (byte) -1);
+            Cell[] sortedCells = sortCell(cells, player_cell);
+            int largestAngle = Integer.MIN_VALUE;
+            Cell current = sortedCells[0];
+            int directionAngle = extractAngleFromVector(current.getPosition(), player_cell);
+            /*if (cells.size() != sortedCells.length)
+                    System.out.println("Cells length" + cells.size() + ". Sorted cell length: " + sortedCells.length);
+            System.out.println("\n" + sortedCells.length);*/
+            /*for (Cell cell : sortedCells) {
+                    System.out.println(cell.getPosition().x + "," + cell.getPosition().y);
+            }*/
+
+            for (int i = 1; i < sortedCells.length && sortedCells[i] != null; i++) {
+                    int currentAngle = Math.abs(extractAngleFromVector(sortedCells[i].getPosition(), player_cell)
+                                    - extractAngleFromVector(current.getPosition(), player_cell));
+                    if (currentAngle > largestAngle) {
+                            largestAngle = currentAngle;
+                            directionAngle = extractAngleFromVector(sortedCells[i].getPosition(), player_cell) - largestAngle / 2;
+                    }
+                    current = sortedCells[i];
             }
-            if (!nearby_cells.isEmpty()) {
-                    Set<Cell> cells = findCellInRange(nearby_cells, player_cell);
-                    if (cells.size() == 1) {
-                            vector = avoidCell(player_cell, cells.iterator().next());
-                    } else if (cells.size() >= 2) {
-                            // find best angle
-                            vector = findBestDirection(cells, player_cell);
+            if (sortedCells[sortedCells.length - 1] != null) {
+                    int currentAngle = Math
+                                    .abs(extractAngleFromVector(sortedCells[sortedCells.length - 1].getPosition(), player_cell)
+                                                    - extractAngleFromVector(sortedCells[0].getPosition(), player_cell));
+                    if (currentAngle > largestAngle) {
+                            largestAngle = currentAngle;
+                            directionAngle = extractAngleFromVector(sortedCells[0].getPosition(), player_cell) - largestAngle / 2;
+                    }
+            }
+            // System.out.println("Largest angle:"+ directionAngle);
+
+            return extractVectorFromAngle(directionAngle);
+    }
+
+
+    // sort cells by its angle with play cell
+    private Cell[] sortCell(Set<Cell> cells, Cell player_cell) {
+            Cell[] orderedCells = new Cell[cells.size()];
+            Map<Integer, Cell> cellAngleMap = new HashMap<Integer, Cell>();
+            List<Integer> angleSet = new ArrayList<Integer>();
+            for (Cell cell : cells) {
+                    int angle = extractAngleFromVector(cell.getPosition(), player_cell);
+                    if (!cellAngleMap.containsKey(angle)) {
+                            cellAngleMap.put(angle, cell);
+                            angleSet.add(angle);
+                    }
+            }
+            Collections.sort(angleSet);
+            int i = 0;
+            for (int key : angleSet) {
+                    orderedCells[i++] = cellAngleMap.get(key);
+            }
+
+            return orderedCells;
+    }
+
+    private Set<Cell> findCellInRange(Set<Cell> cells, Cell player_cell) {
+            Set<Cell> cell_List = new HashSet<>();
+            for (Cell cell : cells) {
+                    if (player_cell.distance(cell) <= cell_vision) {
+                            cell_List.add(cell);
+                    }
+            }
+            return cell_List;
+    }
+
+    private Point avoidCell(Cell pl_cell, Cell one) {
+            int enemy_dir = extractAngleFromVector(one.getPosition(), pl_cell);
+            enemy_dir *= 2; // back to 360 degrees for easier mental arithmetic
+            int my_cell_dir = (enemy_dir + 180) % 360; // opposite direction of
+                                                                                                    // enemy
+            my_cell_dir /= 2;
+            return this.extractVectorFromAngle(my_cell_dir);
+    }
+
+    private boolean collides(Cell player_cell, Point vector, Set<Cell> nearby_cells, Set<Pherome> nearby_pheromes) {
+            Iterator<Cell> cell_it = nearby_cells.iterator();
+            Point destination = player_cell.getPosition().move(vector);
+            while (cell_it.hasNext()) {
+                    Cell other = cell_it.next();
+                    if (destination.distance(other.getPosition()) < 0.5 * player_cell.getDiameter() + 0.5 * other.getDiameter()
+                                    + 0.00011)
+                            return true;
+            }
+            Iterator<Pherome> pherome_it = nearby_pheromes.iterator();
+            while (pherome_it.hasNext()) {
+                    Pherome other = pherome_it.next();
+                    if (other.player != player_cell.player
+                                    && destination.distance(other.getPosition()) < 0.5 * player_cell.getDiameter() + 0.0001)
+                            return true;
+            }
+            return false;
+    }
+
+    public Point extractVectorFromAngle(double angel) {
+            double theta = Math.toRadians(2 * angel);
+            double dx = Cell.move_dist * Math.cos(theta);
+            double dy = Cell.move_dist * Math.sin(theta);
+            return new Point(dx, dy);
+    }
+
+    /*
+     * compute the angle from Point arg. should be out of 180 since it deals in
+     * angles in 2-deg increments. referenced
+     * http://www.davdata.nl/math/vectdirection.html for extrapolating angles
+     * from vectors.
+     */
+    private int extractAngleFromVector(Point arg, Cell player_cell) {
+            double x = player_cell.getPosition().x;
+            double y = player_cell.getPosition().y;
+
+            if (x == arg.x) { // cell is either directly above or below ours
+                    if (y > arg.y) { // go up
+                            return 45; // 90/2
+                    } else { // otherwise go down
+                            return 135; // 270/2
                     }
             }
 
-            if (!collides(player_cell, vector, nearby_cells, nearby_pheromes))
-                return new Move(vector, memory);
-            
-            // if all tries fail, just chill in place
-            if (this.t > 0) {
-                slather.g2.Player player2 = new slather.g2.Player();
-                return player2.playCircle(player_cell, memory, nearby_cells,
-                                          nearby_pheromes);
-            } else {
-                return new Move(vector, memory);
-            }
-	}
+            double dx = arg.x - x;
+            double dy = arg.y - y;
+            double angle = Math.atan(dy / dx);
+            if (arg.x < x)
+                    angle += Math.PI;
+            if (angle < 0)
+                    angle += 2 * Math.PI;
+            return (int) (Math.toDegrees(angle) / 2);
+    }
 
-	private Point findBestDirection(Set<Cell> cells, Cell player_cell) {
-		// TODO Auto-generated method stub
-		Cell[] sortedCells = sortCell(cells, player_cell);
-		int largestAngle = Integer.MIN_VALUE;
-		Cell current = sortedCells[0];
-		int directionAngle = extractAngleFromVector(current.getPosition(), player_cell);
-		/*if (cells.size() != sortedCells.length)
-			System.out.println("Cells length" + cells.size() + ". Sorted cell length: " + sortedCells.length);
-		System.out.println("\n" + sortedCells.length);*/
-		/*for (Cell cell : sortedCells) {
-			System.out.println(cell.getPosition().x + "," + cell.getPosition().y);
-		}*/
+    // group 2's byte2angle method
+    private double byte2angle(byte b) {
+        // -128 <= b < 128
+        // -1 <= b/128 < 1
+        // -pi <= a < pi
+        return normalizeAngle(TWOPI * (((double) ((b) & ANGLE_MASK) ) / ANGLE_MAX), 0);
+    }
 
-		for (int i = 1; i < sortedCells.length && sortedCells[i] != null; i++) {
-			int currentAngle = Math.abs(extractAngleFromVector(sortedCells[i].getPosition(), player_cell)
-					- extractAngleFromVector(current.getPosition(), player_cell));
-			if (currentAngle > largestAngle) {
-				largestAngle = currentAngle;
-				directionAngle = extractAngleFromVector(sortedCells[i].getPosition(), player_cell) - largestAngle / 2;
-			}
-			current = sortedCells[i];
-		}
-		if (sortedCells[sortedCells.length - 1] != null) {
-			int currentAngle = Math
-					.abs(extractAngleFromVector(sortedCells[sortedCells.length - 1].getPosition(), player_cell)
-							- extractAngleFromVector(sortedCells[0].getPosition(), player_cell));
-			if (currentAngle > largestAngle) {
-				largestAngle = currentAngle;
-				directionAngle = extractAngleFromVector(sortedCells[0].getPosition(), player_cell) - largestAngle / 2;
-			}
-		}
-		// System.out.println("Largest angle:"+ directionAngle);
+    // group 2's angle2byte method
+    private byte angle2byte(double a, byte b) {
+        final double actualAngle = ((normalizeAngle(a,0) / TWOPI)*ANGLE_MAX);
+        final int anglePart = (int) (((int)actualAngle) & ANGLE_MASK);
+        final byte memoryPart = (byte) ( b & ~ANGLE_MASK);
+        // System.out.println("angle2byte "+ memoryPart +","+ anglePart +","+ (normalizeAngle(a,0)/TWOPI) +","+ ANGLE_MAX +","+ a);
+        return (byte) ((anglePart | memoryPart));
+    }
 
-		return extractVectorFromAngle(directionAngle);
-	}
-
-
-	// sort cells by its angle with play cell
-	private Cell[] sortCell(Set<Cell> cells, Cell player_cell) {
-		Cell[] orderedCells = new Cell[cells.size()];
-		Map<Integer, Cell> cellAngleMap = new HashMap<Integer, Cell>();
-		List<Integer> angleSet = new ArrayList<Integer>();
-		for (Cell cell : cells) {
-			int angle = extractAngleFromVector(cell.getPosition(), player_cell);
-			if (!cellAngleMap.containsKey(angle)) {
-				cellAngleMap.put(angle, cell);
-				angleSet.add(angle);
-			}
-		}
-		Collections.sort(angleSet);
-		int i = 0;
-		for (int key : angleSet) {
-			orderedCells[i++] = cellAngleMap.get(key);
-		}
-
-		return orderedCells;
-	}
-
-	private Set<Cell> findCellInRange(Set<Cell> cells, Cell player_cell) {
-		Set<Cell> cell_List = new HashSet<>();
-		for (Cell cell : cells) {
-			if (player_cell.distance(cell) <= cell_vision) {
-				cell_List.add(cell);
-			}
-		}
-		return cell_List;
-	}
-
-	private Point avoidCell(Cell pl_cell, Cell one) {
-		int enemy_dir = extractAngleFromVector(one.getPosition(), pl_cell);
-		enemy_dir *= 2; // back to 360 degrees for easier mental arithmetic
-		int my_cell_dir = (enemy_dir + 180) % 360; // opposite direction of
-													// enemy
-		my_cell_dir /= 2;
-		return this.extractVectorFromAngle(my_cell_dir);
-	}
-
-	private boolean collides(Cell player_cell, Point vector, Set<Cell> nearby_cells, Set<Pherome> nearby_pheromes) {
-		Iterator<Cell> cell_it = nearby_cells.iterator();
-		Point destination = player_cell.getPosition().move(vector);
-		while (cell_it.hasNext()) {
-			Cell other = cell_it.next();
-			if (destination.distance(other.getPosition()) < 0.5 * player_cell.getDiameter() + 0.5 * other.getDiameter()
-					+ 0.00011)
-				return true;
-		}
-		Iterator<Pherome> pherome_it = nearby_pheromes.iterator();
-		while (pherome_it.hasNext()) {
-			Pherome other = pherome_it.next();
-			if (other.player != player_cell.player
-					&& destination.distance(other.getPosition()) < 0.5 * player_cell.getDiameter() + 0.0001)
-				return true;
-		}
-		return false;
-	}
-
-	public Point extractVectorFromAngle(int angel) {
-		double theta = Math.toRadians(2 * angel);
-		double dx = Cell.move_dist * Math.cos(theta);
-		double dy = Cell.move_dist * Math.sin(theta);
-		return new Point(dx, dy);
-	}
-
-	/*
-	 * compute the angle from Point arg. should be out of 180 since it deals in
-	 * angles in 2-deg increments. referenced
-	 * http://www.davdata.nl/math/vectdirection.html for extrapolating angles
-	 * from vectors.
-	 */
-	private int extractAngleFromVector(Point arg, Cell player_cell) {
-		double x = player_cell.getPosition().x;
-		double y = player_cell.getPosition().y;
-
-		if (x == arg.x) { // cell is either directly above or below ours
-			if (y > arg.y) { // go up
-				return 45; // 90/2
-			} else { // otherwise go down
-				return 135; // 270/2
-			}
-		}
-
-		double dx = arg.x - x;
-		double dy = arg.y - y;
-		double angle = Math.atan(dy / dx);
-		if (arg.x < x)
-			angle += Math.PI;
-		if (angle < 0)
-			angle += 2 * Math.PI;
-		return (int) (Math.toDegrees(angle) / 2);
-	}
+    // group 2's normalizeAngle
+    private double normalizeAngle(double a, double start) {
+        if( a < start ) {
+            return normalizeAngle( a+TWOPI, start);
+        } else if (a >= (start+TWOPI)) {
+            return normalizeAngle( a-TWOPI, start);
+        } else {
+            return a;
+        }
+    }
 }
