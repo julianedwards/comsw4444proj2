@@ -10,6 +10,7 @@ requests to merge into master.
 * [ ] Base strategy optimization to account for moves that would obstruct growth
 * [ ] Base strategy optimization to account for pheromone avoidance
 * [ ] Implement our own circling strategy based off of t
+* [ ] Cleanup our code
 * [ ] Implement quadrant-claiming start-game strategy
     - [ ] Have maxAngle algorithm handle additional quadrant argument
     - [ ] Implement quadrants
@@ -20,8 +21,9 @@ requests to merge into master.
     javac slather/g6/Player.java
     java pentos.sim.Simulator -g g6 --gui
 
-## Issues
-* Our circling/squaring method isn't working
-
 ## Further Ideas
 * Eights vs. circles vs. squares for late-game strategy
+
+## Issues
+* Our circling/squaring method isn't working
+* Our code is messy
