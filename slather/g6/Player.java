@@ -11,23 +11,74 @@ public class Player implements slather.sim.Player {
 	private Random gen;
 	private double d;
 	private int t;
+	
+	private int turn;
+	private double diameter;	/* used in determining the initial # of cells */
+	private int initialCells;
+	private int totalCells;
+	private boolean determine;
+	// private byte initialCellMem;
 
 	public void init(double d, int t) {
 		gen = new Random();
 		this.d = d;
 		this.t = t;
+		this.turn = 0;
+		this.diameter = 0;
+		this.initialCells = 0;
+		this.determine = true;
+		// this.initialCellMem = -128;
 	}
 
 	public Move play(Cell player_cell, byte memory, Set<Cell> nearby_cells, Set<Pherome> nearby_pheromes) {
-		if (player_cell.getDiameter() >= 2) // reproduce whenever possible
-			return new Move(true, (byte) -1, (byte) -1);
-		// if (memory > 0) { // follow previous direction unless it would cause a
-		// 					// collision
-		// 	Point vector = extractVectorFromAngle((int) memory);
-		// 	// check for collisions
-		// 	if (!collides(player_cell, vector, nearby_cells, nearby_pheromes))
-		// 		return new Move(vector, memory);
-		// }
+		/* successfully records starting cell count into this.initialCells */
+		/* records heirarchical reproduction count in memory */
+		if (turn == 0) {
+			this.diameter = player_cell.getDiameter();
+			this.initialCells++;
+			/* debug */
+			// System.out.println("memory preassignment = " + memory);
+			
+			// memory = this.initialCellMem;
+			/* debug */
+			// System.out.println("memory postassignment = " + memory);
+		}
+		
+		if (determine == true && turn != 0) {
+			if (player_cell.getDiameter() == this.diameter) {
+				// memory = this.initialCellMem;
+				this.initialCells++;
+			} else {
+				determine = false;
+				this.totalCells = this.initialCells;
+				/* debug */
+				System.out.println("Number of starting cells = " + this.initialCells);
+			}
+		}
+		turn++;
+		
+		if (player_cell.getDiameter() >= 2) { // reproduce whenever possible
+			// byte increment = (byte) 0b0000_0001;
+			
+			/* debug */
+			// System.out.println("parent memory = " + memory);
+			
+			// byte daughter_mem = (byte) (memory + increment);
+			
+			int daughter_mem = Math.abs(memory - 90) % 180;
+			
+			/* debug */
+			System.out.printf("memory = %d\n", memory);
+			System.out.printf("daughter mem = %d\n", daughter_mem);
+			
+			this.totalCells++;
+			
+			/* debug */
+			// System.out.printf("total cell count = %d\n", this.totalCells);
+			
+			return new Move(true, memory, (byte) daughter_mem);
+		}
+
 
 		/*
 		 * go in opposite direction of opposing cells, doesn't currently use the
@@ -67,9 +118,19 @@ public class Player implements slather.sim.Player {
 					return new Move(vector, memory);
 			}
 		}
-
-		// if no previous direction specified or if there was a collision, try
-		// random directions to go in until one doesn't collide
+		
+		/* follow previous direction unless it would cause a collision */
+		if (memory > 0) { 
+			Point vector = extractVectorFromAngle((int) memory);
+			// check for collisions
+			if (!collides(player_cell, vector, nearby_cells, nearby_pheromes))
+				return new Move(vector, memory);
+		}
+		
+		/* 
+		 * if no previous direction specified or if there was a collision, try
+		 * random directions to go in until one doesn't collide 
+		 */
 		for (int i = 0; i < 4; i++) {
 			int arg = gen.nextInt(180) + 1;
 			Point vector = extractVectorFromAngle(arg);
@@ -78,7 +139,7 @@ public class Player implements slather.sim.Player {
 		}
 
 		// if all tries fail, just chill in place
-		return new Move(new Point(0, 0), (byte) 0);
+		return new Move(new Point(0, 0), memory);
 	}
 
 	/* sort cells from smallest distance from player_cell to greatest */
