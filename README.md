@@ -19,7 +19,7 @@ requests to merge into master.
 ## Commands
     javac slather/sim/Simulator.java
     javac slather/g6/Player.java
-    java pentos.sim.Simulator -g g6 --gui
+    java slather.sim.Simulator --gui -g g6 g0 g0 g0 g0 g0 g0 g0 g0 g0
 
 ## Further Ideas
 * Eights vs. circles vs. squares for late-game strategy
