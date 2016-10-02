@@ -17,7 +17,10 @@ public class Player implements slather.sim.Player {
 	private int initialCells;
 	private int totalCells;
 	private boolean determine;
-	// private byte initialCellMem;
+	
+	private boolean squaring;
+	private int movesPerSide;
+	private int totalOfSides;
 
 	public void init(double d, int t) {
 		gen = new Random();
@@ -27,7 +30,10 @@ public class Player implements slather.sim.Player {
 		this.diameter = 0;
 		this.initialCells = 0;
 		this.determine = true;
-		// this.initialCellMem = -128;
+		
+		this.movesPerSide = t / 4;	// 4 for the # of sides in a square
+		this.totalOfSides = movesPerSide * 4;
+		this.squaring = false;
 	}
 
 	public Move play(Cell player_cell, byte memory, Set<Cell> nearby_cells, Set<Pherome> nearby_pheromes) {
@@ -36,17 +42,10 @@ public class Player implements slather.sim.Player {
 		if (turn == 0) {
 			this.diameter = player_cell.getDiameter();
 			this.initialCells++;
-			/* debug */
-			// System.out.println("memory preassignment = " + memory);
-			
-			// memory = this.initialCellMem;
-			/* debug */
-			// System.out.println("memory postassignment = " + memory);
 		}
 		
 		if (determine == true && turn != 0) {
 			if (player_cell.getDiameter() == this.diameter) {
-				// memory = this.initialCellMem;
 				this.initialCells++;
 			} else {
 				determine = false;
@@ -58,12 +57,6 @@ public class Player implements slather.sim.Player {
 		turn++;
 		
 		if (player_cell.getDiameter() >= 2) { // reproduce whenever possible
-			// byte increment = (byte) 0b0000_0001;
-			
-			/* debug */
-			// System.out.println("parent memory = " + memory);
-			
-			// byte daughter_mem = (byte) (memory + increment);
 			
 			int daughter_mem = Math.abs(memory - 90) % 180;
 			
@@ -73,12 +66,33 @@ public class Player implements slather.sim.Player {
 			
 			this.totalCells++;
 			
-			/* debug */
-			// System.out.printf("total cell count = %d\n", this.totalCells);
-			
 			return new Move(true, memory, (byte) daughter_mem);
 		}
+		
+		/* squaring strategy */
+		if (squaring) {
+			int tryNum = 0;
+			Point vector = null;
 
+			while (tryNum < 4) {
+				vector = this.squaringStrat(player_cell, memory);
+				if (this.collides(player_cell, vector, nearby_cells, nearby_pheromes)) {
+					memory += this.movesPerSide;
+					tryNum++;
+				} else {
+					memory++;
+					break;
+				}
+			}
+			// double curX = player_cell.getPosition().x;
+			// double curY = player_cell.getPosition().y;
+			int angle = this.extractAngleFromVector(vector, player_cell);
+			Point newVector = this.extractVectorFromAngle(angle);
+			// System.out.printf("move from (%f, %f) ", curX, curY);
+			// System.out.printf("to (%f, %f)\n", newVector.x, newVector.y);
+			return new Move(newVector, memory);
+		}
+		
 
 		/*
 		 * go in opposite direction of opposing cells, doesn't currently use the
@@ -252,6 +266,33 @@ public class Player implements slather.sim.Player {
 		if (angle < 0)
 			angle += 2 * Math.PI;
 		return (int) (Math.toDegrees(angle) / 2);
+	}
+	
+	/*
+	 * squaring strategy only worthwhile if t >= 4.
+	 * uses memory to determine up, down, left or right.
+	 */
+	private Point squaringStrat(Cell current, Byte memory) {
+
+		int dir = memory % this.totalOfSides;
+		int right = this.movesPerSide;
+		int down = right * 2;
+		int left = right * 3;
+		int up = right * 4;
+
+		double x = current.getPosition().x;
+		double y = current.getPosition().y;
+
+		if (dir < right) {
+			x += Cell.move_dist;
+		} else if (dir < down) {
+			y -= Cell.move_dist;
+		} else if (dir < left) {
+			x -= Cell.move_dist;
+		} else if (dir < up) {
+			y += Cell.move_dist;
+		}
+		return new Point(x, y);
 	}
 
 }
