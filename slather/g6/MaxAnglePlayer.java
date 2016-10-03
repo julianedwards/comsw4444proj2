@@ -17,8 +17,6 @@ import slather.sim.Move;
 import slather.sim.Pherome;
 import slather.sim.Player;
 import slather.sim.Point;
-import slather.g2.*;
-import slather.g8.*;
 
 public class MaxAnglePlayer implements Player {
 
@@ -48,7 +46,7 @@ public class MaxAnglePlayer implements Player {
 	}
 
 	@Override
-	public void init(double d, int t) {
+	public void init(double d, int t, int sideLength) {
 		this.t = t;
 		this.d = d;
 	}
@@ -67,7 +65,6 @@ public class MaxAnglePlayer implements Player {
 			} else if (cells.size() >= 2) {
 				// find best angle
 				vector = findBestDirection(cells, player_cell);
-				//vector = findBestDirection(nearby_cells, nearby_pheromes, player_cell);
 			}
 		}
 		if (vector.x != 0 && vector.y != 0) {
@@ -81,15 +78,6 @@ public class MaxAnglePlayer implements Player {
 				return new Move(vector, memory);
 		}
 		
-		 /*for (int i = memory + 90; i < 360; i++) {
-             //int arg = gen.nextInt(180) + 1;
-             vector = extractVectorFromAngle(i);
-             if (!collides(player_cell, vector, nearby_cells, nearby_pheromes))
-                     return new Move(vector, (byte) i);
-     }
-     vector = new Point(0,0);
-     return new Move(vector, memory);*/
-		// Generate a random new direction to travel
 		for (int i = 0; i < 180; i++) {
 			Random gen = new Random();
 			int arg = gen.nextInt(180) + 1;
@@ -239,12 +227,6 @@ public class MaxAnglePlayer implements Player {
 		return new Point(dx, dy);
 	}
 
-	/*
-	 * compute the angle from Point arg. should be out of 180 since it deals in
-	 * angles in 2-deg increments. referenced
-	 * http://www.davdata.nl/math/vectdirection.html for extrapolating angles
-	 * from vectors.
-	 */
 	private double getDistance(Point first, Point second) {
 		double dist_square = (first.x - second.x) * (first.x - second.x) + (first.y - second.y) * (first.y - second.y);
 		double dist = Math.sqrt(dist_square);
@@ -292,5 +274,4 @@ public class MaxAnglePlayer implements Player {
 		double l = Math.hypot(res.x, res.y);
 		return new Point(x / l, y / l);
 	}
-
 }

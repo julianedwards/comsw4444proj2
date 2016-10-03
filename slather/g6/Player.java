@@ -85,11 +85,14 @@ public class Player implements slather.sim.Player {
 	private Random gen;
 	private double d;
 	private int t;
+	private int sideLength;
 
-	public void init(double d, int t) {
+	 @Override
+	public void init(double d, int t, int sideLength) {
 		gen = new Random();
 		this.d = d;
 		this.t = t;
+		this.sideLength = sideLength;
 	}
 
 	public Move play(Cell player_cell, byte memory, Set<Cell> nearby_cells, Set<Pherome> nearby_pheromes) {

@@ -1,3 +1,7 @@
+function pause() {
+    paused = (paused + 1) % 2;
+}
+
 function parse_float(x)
 {
     if (isNaN(parseFloat(x)) || !isFinite(x))
@@ -17,7 +21,7 @@ function process(data)
 {
     // check the canvas size
     var canvas = document.getElementById("canvas");
-    var colors = ["red", "green", "blue", "purple", "orange", "cyan", "yellow", "hotpink", "palegreen", "maroon"];
+    var colors = ["red", "blue", "purple", "orange", "cyan", "yellow", "hotpink", "palegreen", "maroon", "green"];
     var y_base = 90;
     var size = canvas.height - y_base;
     var xoffset = 30;    
@@ -41,11 +45,6 @@ function process(data)
     ctx.lineTo(x_base + size + xoffset, y_base + size);
     ctx.lineTo(x_base + xoffset,        y_base + size);
     ctx.lineTo(x_base + xoffset,        y_base);
-/*    ctx.moveTo(x_base + 1.5,        y_base + 1.5);
-    ctx.lineTo(x_base + size - 1.5, y_base + 1.5);
-    ctx.lineTo(x_base + size - 1.5, y_base + size - 1.5);
-    ctx.lineTo(x_base + 1.5,        y_base + size - 1.5);
-    ctx.lineTo(x_base + 1.5,        y_base + 1.5);*/
     ctx.lineWidth = 3;
     ctx.strokeStyle = "black";
     ctx.stroke();
@@ -57,6 +56,8 @@ function process(data)
     ctx.lineWidth = 4;
     ctx.strokeStyle = "darkgrey";
     // parse game status
+    if (params[3] >= 99)
+	pause();
     ctx.strokeText("Total turns played: " + params[2], 0, y_base - 60);;
     ctx.fillStyle = "black";
     ctx.fillText("Total turns played: " + params[2], 0, y_base - 60);;
@@ -120,7 +121,7 @@ function ajax(version, retries, timeout)
 	    if (xhr.status != 200)
 		throw "Invalid HTTP status: " + xhr.status;
 	    refresh = process(xhr.responseText);
-	    if (latest_version < version)
+	    if (latest_version < version && paused == 0)
 		latest_version = version;
 	    else
 		refresh = -1;
@@ -146,4 +147,5 @@ function ajax(version, retries, timeout)
     xhr.send();
 }
 
+var paused = 0;
 ajax(0, 10, 100);
