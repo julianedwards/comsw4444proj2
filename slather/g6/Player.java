@@ -93,20 +93,27 @@ public class Player implements slather.sim.Player {
 	}
 
 	public Move play(Cell player_cell, byte memory, Set<Cell> nearby_cells, Set<Pherome> nearby_pheromes) {
-		if (player_cell.getDiameter() >= 2) // reproduce whenever possible
+		/*if(t>=5){
+			CirclePlayer circlePlayer = new CirclePlayer();
+			return circlePlayer.play(player_cell, memory, nearby_cells, nearby_pheromes);
+		}*/
+		MaxAnglePlayer maxAnglePlayer = new MaxAnglePlayer();
+		return maxAnglePlayer.play(player_cell, memory, nearby_cells, nearby_pheromes);
+/*		if (player_cell.getDiameter() >= 2) // reproduce whenever possible
 			return new Move(true, (byte) -1, (byte) -1);
-		// if (memory > 0) { // follow previous direction unless it would cause a
-		// 					// collision
-		// 	Point vector = extractVectorFromAngle((int) memory);
-		// 	// check for collisions
-		// 	if (!collides(player_cell, vector, nearby_cells, nearby_pheromes))
-		// 		return new Move(vector, memory);
+		// if (memory > 0) { // follow previous direction unless it would cause
+		// a
+		// // collision
+		// Point vector = extractVectorFromAngle((int) memory);
+		// // check for collisions
+		// if (!collides(player_cell, vector, nearby_cells, nearby_pheromes))
+		// return new Move(vector, memory);
 		// }
 
-		/*
+		
 		 * go in opposite direction of opposing cells, doesn't currently use the
 		 * memory
-		 */
+		 
 		Set<Cell> friendly_cells = new HashSet<Cell>();
 		Set<Cell> enemy_cells = new HashSet<Cell>();
 		Set<Cell> two_closest_enemies = new HashSet<Cell>();
@@ -114,21 +121,23 @@ public class Player implements slather.sim.Player {
 
 			// sort points into friendly and enemy cell positions
 			for (Cell currCell : nearby_cells) {
-				if (currCell.player == 6) {
-					friendly_cells.add(currCell);
-				} else {
-					enemy_cells.add(currCell);
-				}
+				
+				 * if (currCell.player == 6) {
+				 * System.out.println(currCell.player+","+player_cell.player);
+				 * friendly_cells.add(currCell); } else {
+				 
+				enemy_cells.add(currCell);
+				// }
 			}
 
-			/*
+			
 			 * use the closest 2 enemy cells to determine your direction of
 			 * movement. use 1 enemy cell if there is only one enemy in your
 			 * vicinity
-			 */
+			 
 			Point vector;
 			ArrayList<Cell> sortedCells = this.sort(enemy_cells, player_cell);
-			if(!sortedCells.isEmpty()) {
+			if (!sortedCells.isEmpty()) {
 				if (sortedCells.size() >= 2) {
 					Cell cellOne = sortedCells.get(0);
 					Cell cellTwo = sortedCells.get(1);
@@ -152,7 +161,7 @@ public class Player implements slather.sim.Player {
 		}
 
 		// if all tries fail, just chill in place
-		return new Move(new Point(0, 0), (byte) 0);
+		return new Move(new Point(0, 0), (byte) 0);*/
 	}
 
 	/* sort cells from smallest distance from player_cell to greatest */
@@ -167,10 +176,10 @@ public class Player implements slather.sim.Player {
 		}
 
 		Set<Double> keys = dict.keySet();
-		for(double key : keys) {
+		for (double key : keys) {
 			dist_list.add(key);
 		}
-		
+
 		Collections.sort(dist_list);
 
 		// for debugging
