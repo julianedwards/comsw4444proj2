@@ -41,7 +41,7 @@ class Simulator {
     private static boolean verbose = false;
 
     // group players
-    private static String[] groups = {"g0","g0","g0","g0","g0","g0","g0","g0","g0","g0"};
+    private static String[] groups = {"g0","g1","g2","g3","g4","g5","g6","g7","g8","g9"};
     private static Class[] player_classes;
     private static Player[] players;
     private static int[] score;
@@ -49,7 +49,7 @@ class Simulator {
 
     // default params
     private static double d = 2.0; // radius of vision of cell (in mm)
-    private static int t = 10; // number of turns after which pherome wears out
+    private static int t = 0; // number of turns after which pherome wears out
     private static int p = 10; // number of players. default is ten copies of g0
     private static int n = 1; // number of starting cells per player
 
