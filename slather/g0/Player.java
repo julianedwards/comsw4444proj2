@@ -13,7 +13,7 @@ public class Player implements slather.sim.Player {
     private double d;
     private int t;
 
-    public void init(double d, int t) {
+    public void init(double d, int t, int sideLength) {
 	gen = new Random();
 	this.d = d;
 	this.t = t;

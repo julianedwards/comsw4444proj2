@@ -17,7 +17,8 @@ public class Player implements slather.sim.Player {
 	private static double COMF_RANGE = 1;
 
 	//==========functions==================================
-	public void init(double d, int t) {
+	 @Override
+	public void init(double d, int t, int side_length) {
 		gen = new Random();
 	}
 
