@@ -42,8 +42,8 @@ public class Player implements slather.sim.Player {
 		/* records heirarchical reproduction count in memory */
 		
 		//uncomment to use max angle player 
-		//return maxAnglePlayer.play(player_cell, memory, nearby_cells, nearby_pheromes);
-		if (turn == 0) {
+		return maxAnglePlayer.play(player_cell, memory, nearby_cells, nearby_pheromes);
+		/*if (turn == 0) {
 			this.diameter = player_cell.getDiameter();
 			this.initialCells++;
 		}
@@ -54,7 +54,7 @@ public class Player implements slather.sim.Player {
 			} else {
 				determine = false;
 				this.totalCells = this.initialCells;
-				/* debug */
+				 debug 
 				System.out.println("Number of starting cells = " + this.initialCells);
 			}
 		}
@@ -64,7 +64,7 @@ public class Player implements slather.sim.Player {
 			
 			int daughter_mem = Math.abs(memory - 90) % 180;
 			
-			/* debug */
+			 debug 
 			System.out.printf("memory = %d\n", memory);
 			System.out.printf("daughter mem = %d\n", daughter_mem);
 			
@@ -73,7 +73,7 @@ public class Player implements slather.sim.Player {
 			return new Move(true, memory, (byte) daughter_mem);
 		}
 		
-		/* squaring strategy */
+		 squaring strategy 
 		if (squaring) {
 			int tryNum = 0;
 			Point vector = null;
@@ -98,10 +98,10 @@ public class Player implements slather.sim.Player {
 		}
 		
 
-		/*
+		
 		 * go in opposite direction of opposing cells, doesn't currently use the
 		 * memory
-		 */
+		 
 		Set<Cell> friendly_cells = new HashSet<Cell>();
 		Set<Cell> enemy_cells = new HashSet<Cell>();
 		Set<Cell> two_closest_enemies = new HashSet<Cell>();
@@ -116,11 +116,11 @@ public class Player implements slather.sim.Player {
 				}
 			}
 
-			/*
+			
 			 * use the closest 2 enemy cells to determine your direction of
 			 * movement. use 1 enemy cell if there is only one enemy in your
 			 * vicinity
-			 */
+			 
 			Point vector;
 			ArrayList<Cell> sortedCells = this.sort(enemy_cells, player_cell);
 			if(!sortedCells.isEmpty()) {
@@ -137,7 +137,7 @@ public class Player implements slather.sim.Player {
 			}
 		}
 		
-		/* follow previous direction unless it would cause a collision */
+		 follow previous direction unless it would cause a collision 
 		if (memory > 0) { 
 			Point vector = extractVectorFromAngle((int) memory);
 			// check for collisions
@@ -145,10 +145,10 @@ public class Player implements slather.sim.Player {
 				return new Move(vector, memory);
 		}
 		
-		/* 
+		 
 		 * if no previous direction specified or if there was a collision, try
 		 * random directions to go in until one doesn't collide 
-		 */
+		 
 		for (int i = 0; i < 4; i++) {
 			int arg = gen.nextInt(180) + 1;
 			Point vector = extractVectorFromAngle(arg);
@@ -157,7 +157,7 @@ public class Player implements slather.sim.Player {
 		}
 
 		// if all tries fail, just chill in place
-		return new Move(new Point(0, 0), memory);
+		return new Move(new Point(0, 0), memory);*/
 	}
 
 	/* sort cells from smallest distance from player_cell to greatest */

@@ -12,12 +12,14 @@ public class MaxAnglePlayer implements slather.sim.Player {
 	private Random gen;
 	private int T;
 	private double D;
+	private static int cell_vision = 2;
 
 	@Override
 	public void init(double d, int t, int side_length) {
 		gen = new Random();
 		this.T = t;
 		this.D = d;
+		//cell_vision = d + 1;
 	}
 
 	@SuppressWarnings("rawtypes")
@@ -28,7 +30,11 @@ public class MaxAnglePlayer implements slather.sim.Player {
 			return new Move(true, (byte) 0, (byte) 0);
 		}
 
-		Point largestAnglePath = findBestPath(player_cell, nearby_cells, nearby_pheromes);
+		Set<Cell> newCells = findCellWithinVision(nearby_cells, player_cell);
+		Set<Pherome> newPheromes = findPheromeWithinVision(nearby_pheromes, player_cell);
+		
+		Point largestAnglePath = findBestPath(player_cell, newCells, newPheromes);
+		//Point largestAnglePath = findBestPath(player_cell, nearby_cells, nearby_pheromes);
 		if (largestAnglePath.x == 0 && largestAnglePath.y == 0) {
 			//follow previous path
 			Point vector = extractVectorFromAngle((int) memory);
@@ -39,6 +45,8 @@ public class MaxAnglePlayer implements slather.sim.Player {
 			if (!collides(player_cell, largestAnglePath, nearby_cells, nearby_pheromes)) {
 				int angle = extractAngleFromVector(largestAnglePath, player_cell)/2;
 				return new Move(largestAnglePath,(byte) angle);
+				//return new Move(largestAnglePath,
+				//	(byte) (int) ((Math.toDegrees(Math.atan2(largestAnglePath.y, largestAnglePath.x)) / 2)));
 			}
 		}
 		// Generate a random new direction to travel
@@ -53,6 +61,26 @@ public class MaxAnglePlayer implements slather.sim.Player {
 		return new Move(new Point(0, 0), (byte) 0);
 	}
 
+	private Set<Cell> findCellWithinVision(Set<Cell> nearby_cells, Cell player_cell){
+		Set<Cell> cells = new HashSet<>();
+		for(Cell cell: nearby_cells){
+			if(player_cell.distance(cell)<=cell_vision){
+				cells.add(cell);
+			}
+		}
+		return cells;
+	}
+	
+	private Set<Pherome> findPheromeWithinVision(Set<Pherome> nearby_pheromes, Cell player_cell){
+		Set<Pherome> pheormes = new HashSet<>();
+		for(Pherome p: nearby_pheromes){
+			if(player_cell.distance(p)<=cell_vision){
+				pheormes.add(p);
+			}
+		}
+		return pheormes;
+	}
+	
 	private Point findBestPath(Cell player_cell, Set<Cell> nearby_cells, Set<Pherome> nearby_pheromes) {
 		List<Point> neighbors = new ArrayList<Point>();
 		double largest = 0;
