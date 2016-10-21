@@ -10,31 +10,32 @@ import java.util.*;
 public class MaxAnglePlayer implements slather.sim.Player {
 
 	private Random gen;
-	private int T;
-	private double D;
+	private int t;
+	private double d;
 	private static int cell_vision = 2;
 
 	@Override
 	public void init(double d, int t, int side_length) {
 		gen = new Random();
-		this.T = t;
-		this.D = d;
-		//cell_vision = d + 1;
+		this.t = t;
+		this.d = d;
 	}
 
-	@SuppressWarnings("rawtypes")
-
+	@Override
 	public Move play(Cell player_cell, byte memory, Set<Cell> nearby_cells, Set<Pherome> nearby_pheromes) {
 		// reproduce whenever possible
 		if (player_cell.getDiameter() >= 2) {
 			return new Move(true, (byte) 0, (byte) 0);
 		}
-
-		Set<Cell> newCells = findCellWithinVision(nearby_cells, player_cell);
-		Set<Pherome> newPheromes = findPheromeWithinVision(nearby_pheromes, player_cell);
-		
-		Point largestAnglePath = findBestPath(player_cell, newCells, newPheromes);
-		//Point largestAnglePath = findBestPath(player_cell, nearby_cells, nearby_pheromes);
+		Point largestAnglePath;
+		if(this.d>2){
+			Set<Cell> newCells = findCellWithinVision(nearby_cells, player_cell);
+			Set<Pherome> newPheromes = findPheromeWithinVision(nearby_pheromes, player_cell);
+			largestAnglePath = findBestPath(player_cell, newCells, newPheromes);
+		}else{
+			largestAnglePath = findBestPath(player_cell, nearby_cells, nearby_pheromes);
+		}
+		//if (Double.isNaN(largestAnglePath.x)) {throw new RuntimeException("Invalid vector");}
 		if (largestAnglePath.x == 0 && largestAnglePath.y == 0) {
 			//follow previous path
 			Point vector = extractVectorFromAngle((int) memory);
@@ -43,10 +44,9 @@ public class MaxAnglePlayer implements slather.sim.Player {
 
 		} else {
 			if (!collides(player_cell, largestAnglePath, nearby_cells, nearby_pheromes)) {
+				
 				int angle = extractAngleFromVector(largestAnglePath, player_cell)/2;
 				return new Move(largestAnglePath,(byte) angle);
-				//return new Move(largestAnglePath,
-				//	(byte) (int) ((Math.toDegrees(Math.atan2(largestAnglePath.y, largestAnglePath.x)) / 2)));
 			}
 		}
 		// Generate a random new direction to travel
@@ -105,8 +105,10 @@ public class MaxAnglePlayer implements slather.sim.Player {
 					index = i;
 				}
 			}
+			
 			double angle1 = Math.atan2(neighbors.get(0).y, neighbors.get(0).x);
 			double angle2 = Math.atan2(neighbors.get(neighbors.size() - 1).y, neighbors.get(neighbors.size() - 1).x);
+			if (Double.isNaN(angle1) || Double.isNaN(angle2)) {throw new RuntimeException(neighbors.get(0).y + "," + neighbors.get(0).x + "; " + neighbors.get(neighbors.size()-1).y + "," + neighbors.get(neighbors.size()-1).x);}
 			if (largest < angle1 + 2 * Math.PI - angle2) {
 				largest = angle1 + 2 * Math.PI - angle2;
 				index = 0;
@@ -136,14 +138,17 @@ public class MaxAnglePlayer implements slather.sim.Player {
 				x = two.x + x_coordinate * 100;
 				y = two.y + y_coordinate * 100;
 				double d = getDistanceOfTwoPoints(one, new Point(x, y));
+				
 				if (dis > d) {
 					dis = d;
 					p = new Point(x - one.x, y - one.y);
 				}
 			}
 		}
+
 		double X = p.x, Y = p.y;
 		double L = Math.hypot(X, Y);
+		if (L == 0.0) {return new Point(0,0);}
 		X /= L;
 		Y /= L;
 		return new Point(X, Y);

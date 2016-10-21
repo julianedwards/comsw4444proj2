@@ -48,7 +48,7 @@ class Simulator {
     private static Timer[] threads;
 
     // default params
-    private static double d = 2.0; // radius of vision of cell (in mm)
+    private static double d = 3.0; // radius of vision of cell (in mm)
     private static int t = 10; // number of turns after which pherome wears out
     private static int p = 10; // number of players. default is ten copies of g0
     private static int n = 1; // number of starting cells per player

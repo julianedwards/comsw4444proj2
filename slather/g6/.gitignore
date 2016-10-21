@@ -18,3 +18,10 @@
 /GridObjects.class
 /GridObjectsComparator.class
 /PointsComparator.class
+/MaxAnglePlayerTemp.class
+/MaxAnglePlayerWithEndGameStrategy.class
+/MaxAnglePlayerSquering.class
+/MaxAnglePlayerSquaring.class
+/MaxAnglePlayerLazy.class
+/MaxAnglePlayerWithAvoiding.class
+/MaxAnglePlayerExpand.class
