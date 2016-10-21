@@ -22,8 +22,11 @@ public class Player implements slather.sim.Player {
 	private int movesPerSide;
 	private int totalOfSides;
 	private MaxAnglePlayer maxAnglePlayer = new MaxAnglePlayer();
+        private QuadrantPlayer qp = new QuadrantPlayer();
 
-	public void init(double d, int t, int sideLength) {
+        @Override
+	public void init(double d, int t, int side_length) {
+                System.out.println(d);
 		gen = new Random();
 		this.d = d;
 		this.t = t;
@@ -32,18 +35,25 @@ public class Player implements slather.sim.Player {
 		this.initialCells = 0;
 		this.determine = true;
 		
-		this.movesPerSide = t / 4;	// 4 for the # of sides in a square
+		this.movesPerSide = t / 4; // 4 for the # of sides in a square
 		this.totalOfSides = movesPerSide * 4;
-		this.squaring = true;
+		this.squaring = false;
+                maxAnglePlayer.init(d, t, side_length);
+                qp.init(d, t, side_length);
 	}
 
 	public Move play(Cell player_cell, byte memory, Set<Cell> nearby_cells, Set<Pherome> nearby_pheromes) {
 		/* successfully records starting cell count into this.initialCells */
 		/* records heirarchical reproduction count in memory */
-		
-		if(this.d>0){
+                if (true) return qp.play(player_cell, memory, nearby_cells, nearby_pheromes);
+                
+		if (this.d > 1.0) {
 			return maxAnglePlayer.play(player_cell, memory, nearby_cells, nearby_pheromes);
 		}
+
+                if (this.t >= 4 && turn /70 > 20) {
+                    squaring = true;
+                }
 
 		if (turn == 0) {
 			this.diameter = player_cell.getDiameter();
@@ -67,7 +77,7 @@ public class Player implements slather.sim.Player {
 			int daughter_mem = Math.abs(memory - 90) % 180;
 			
 			//debug 
-			System.out.printf("memory = %d\n", memory);
+
 			System.out.printf("daughter mem = %d\n", daughter_mem);
 			
 			this.totalCells++;
@@ -145,17 +155,8 @@ public class Player implements slather.sim.Player {
 		}
 		
 		 
-<<<<<<< HEAD
-                /*
-		 * if no previous direction specified or if there was a collision, try
-		 * random directions to go in until one doesn't collide 
-                 */
-		/* 
-=======
-		 // if no previous direction specified or if there was a collision, try
+		// if no previous direction specified or if there was a collision, try
 		// random directions to go in until one doesn't collide 
-		 
->>>>>>> b2234ae551828b9fbf9ed5e004fc10ad9bd82bdd
 		for (int i = 0; i < 4; i++) {
 			int arg = gen.nextInt(180) + 1;
 			Point vector = extractVectorFromAngle(arg);
@@ -164,11 +165,7 @@ public class Player implements slather.sim.Player {
 		}
 
 		// if all tries fail, just chill in place
-<<<<<<< HEAD
-		return new Move(new Point(0, 0), memory); */
-=======
 		return new Move(new Point(0, 0), memory);
->>>>>>> b2234ae551828b9fbf9ed5e004fc10ad9bd82bdd
 	}
 
 	/* sort cells from smallest distance from player_cell to greatest */
@@ -203,7 +200,7 @@ public class Player implements slather.sim.Player {
 		int enemy_dir = extractAngleFromVector(one.getPosition(), pl_cell);
 		enemy_dir *= 2; // back to 360 degrees for easier mental arithmetic
 		int my_cell_dir = (enemy_dir + 180) % 360; // opposite direction of
-													// enemy
+                // enemy 
 		my_cell_dir /= 2;
 		return this.extractVectorFromAngle(my_cell_dir);
 	}
@@ -225,93 +222,93 @@ public class Player implements slather.sim.Player {
 		return this.extractVectorFromAngle(desired_angle);
 	}
 
-    // check if moving player_cell by vector collides with any nearby cell or
-    // hostile pherome
-    private boolean collides(Cell player_cell, Point vector,
-                             Set<Cell> nearby_cells,
-                             Set<Pherome> nearby_pheromes)
-    {
-	Iterator<Cell> cell_it = nearby_cells.iterator();
-	Point destination = player_cell.getPosition().move(vector);
-	while (cell_it.hasNext()) {
-	    Cell other = cell_it.next();
-	    if (  destination.distance(other.getPosition())
-                < 0.5*player_cell.getDiameter()
-                + 0.5*other.getDiameter() + 0.00011)
-		return true;
-	}
-	Iterator<Pherome> pherome_it = nearby_pheromes.iterator();
-	while (pherome_it.hasNext()) {
-	    Pherome other = pherome_it.next();
-	    if (   other.player != player_cell.player
-                && destination.distance(other.getPosition())
-                 < 0.5*player_cell.getDiameter() + 0.0001) 
-		return true;
-	}
-	return false;
-    }
-
-    // convert an angle (in 2-deg increments) to a vector with magnitude
-    // Cell.move_dist (max allowed movement distance)
-    private Point extractVectorFromAngle(int arg) {
-	double theta = Math.toRadians(2* (double)arg);
-	double dx = Cell.move_dist * Math.cos(theta);
-	double dy = Cell.move_dist * Math.sin(theta);
-	return new Point(dx, dy);
-    }
-	
-    /*
-     * compute the angle from Point arg. should be out of 180 since it deals in
-     * angles in 2-deg increments. referenced
-     * http://www.davdata.nl/math/vectdirection.html for extrapolating angles
-     * from vectors.
-     */
-    private int extractAngleFromVector(Point arg, Cell player_cell) {
-        double x = player_cell.getPosition().x;
-        double y = player_cell.getPosition().y;
-
-        if (x == arg.x) { // cell is either directly above or below ours
-            if (y > arg.y) { // go up
-                    return 45; // 90/2
-            } else { // otherwise go down
-                    return 135; // 270/2
+        // check if moving player_cell by vector collides with any nearby cell or
+        // hostile pherome
+        private boolean collides(Cell player_cell, Point vector,
+                                 Set<Cell> nearby_cells,
+                                 Set<Pherome> nearby_pheromes)
+        {
+            Iterator<Cell> cell_it = nearby_cells.iterator();
+            Point destination = player_cell.getPosition().move(vector);
+            while (cell_it.hasNext()) {
+                Cell other = cell_it.next();
+                if (  destination.distance(other.getPosition())
+                    < 0.5*player_cell.getDiameter()
+                    + 0.5*other.getDiameter() + 0.00011)
+                    return true;
             }
+            Iterator<Pherome> pherome_it = nearby_pheromes.iterator();
+            while (pherome_it.hasNext()) {
+                Pherome other = pherome_it.next();
+                if (   other.player != player_cell.player
+                    && destination.distance(other.getPosition())
+                     < 0.5*player_cell.getDiameter() + 0.0001) 
+                    return true;
+            }
+            return false;
         }
 
-        double dx = arg.x - x;
-        double dy = arg.y - y;
-        double angle = Math.atan(dy / dx);
-        if (arg.x < x)
-            angle += Math.PI;
-        if (angle < 0)
-            angle += 2 * Math.PI;
-        return (int) (Math.toDegrees(angle) / 2);
-    }
+        // convert an angle (in 2-deg increments) to a vector with magnitude
+        // Cell.move_dist (max allowed movement distance)
+        private Point extractVectorFromAngle(int arg) {
+            double theta = Math.toRadians(2* (double)arg);
+            double dx = Cell.move_dist * Math.cos(theta);
+            double dy = Cell.move_dist * Math.sin(theta);
+            return new Point(dx, dy);
+        }
+            
+        /*
+         * compute the angle from Point arg. should be out of 180 since it deals in
+         * angles in 2-deg increments. referenced
+         * http://www.davdata.nl/math/vectdirection.html for extrapolating angles
+         * from vectors.
+         */
+        private int extractAngleFromVector(Point arg, Cell player_cell) {
+            double x = player_cell.getPosition().x;
+            double y = player_cell.getPosition().y;
 
-    /*
-     * squaring strategy only worthwhile if t >= 4.
-     * uses memory to determine up, down, left or right.
-     */
-    private Point squaringStrat(Cell current, Byte memory) {
-
-            int dir = memory % this.totalOfSides;
-            int right = this.movesPerSide;
-            int down = right * 2;
-            int left = right * 3;
-            int up = right * 4;
-
-            double x = current.getPosition().x;
-            double y = current.getPosition().y;
-
-            if (dir < right) {
-                    x += Cell.move_dist;
-            } else if (dir < down) {
-                    y -= Cell.move_dist;
-            } else if (dir < left) {
-                    x -= Cell.move_dist;
-            } else if (dir < up) {
-                    y += Cell.move_dist;
+            if (x == arg.x) { // cell is either directly above or below ours
+                if (y > arg.y) { // go up
+                        return 45; // 90/2
+                } else { // otherwise go down
+                        return 135; // 270/2
+                }
             }
-            return new Point(x, y);
-    }
+
+            double dx = arg.x - x;
+            double dy = arg.y - y;
+            double angle = Math.atan(dy / dx);
+            if (arg.x < x)
+                angle += Math.PI;
+            if (angle < 0)
+                angle += 2 * Math.PI;
+            return (int) (Math.toDegrees(angle) / 2);
+        }
+
+        /*
+         * squaring strategy only worthwhile if t >= 4.
+         * uses memory to determine up, down, left or right.
+         */
+        private Point squaringStrat(Cell current, Byte memory) {
+
+                int dir = memory % this.totalOfSides;
+                int right = this.movesPerSide;
+                int down = right * 2;
+                int left = right * 3;
+                int up = right * 4;
+
+                double x = current.getPosition().x;
+                double y = current.getPosition().y;
+
+                if (dir < right) {
+                        x += Cell.move_dist;
+                } else if (dir < down) {
+                        y -= Cell.move_dist;
+                } else if (dir < left) {
+                        x -= Cell.move_dist;
+                } else if (dir < up) {
+                        y += Cell.move_dist;
+                }
+                return new Point(x, y);
+        }
 }
